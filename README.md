@@ -1,16 +1,27 @@
 # remAddRow jQuery Plugin
 
-A flexible jQuery plugin for **dynamically adding and removing form
-rows** with:
+A **powerful, flexible jQuery plugin** for dynamically **adding, removing, and reindexing form rows** with full support for:
 
--   Safe index reindexing
--   Database ID vs UI index separation
--   Optional SweetAlert2 + AJAX deletion
--   Optional BootstrapValidator integration
+- Dynamic form fields (`name[]` reindexing)
+- Attribute reindexing (`id`, `for`, `aria-*`, etc.)
+- SweetAlert2 confirmation + AJAX delete
+- Bootstrap Validator integration
+- Custom templates & callbacks
+- Safe and predictable indexing
 
+This plugin is designed for **complex Laravel / Bootstrap / jQuery forms** where dynamic rows must remain valid, accessible, and backend-friendly.
 ------------------------------------------------------------------------
 
 ## ✨ Features
+
+- ➕ Add rows dynamically with a template
+- ➖ Remove rows with optional confirmation
+- 🔄 Automatic reindexing after removal
+- 🏷 Reindex `name`, `id`, `for`, `aria-describedby`, validator attributes
+- 🔐 SweetAlert2 + AJAX delete support
+- ✅ Bootstrap Validator integration
+- 🧩 Fully customizable callbacks and templates
+- 🧠 Safe default behaviors (cannot break core reindexing)
 
 -   Add / remove rows dynamically
 -   UI index (`data-index`) separated from database ID
@@ -58,19 +69,20 @@ The plugin reads the ID only when AJAX delete is required.
 
 ------------------------------------------------------------------------
 
-## 🔧 Plugin Options
+## ⚙️ Configuration Options
 
-### Required / Common Options
+### Core Options
 
-  Option             Type     Description
-  ------------------ -------- ----------------------------
-  `addBtn`           string   Selector for add button
-  `removeSelector`   string   Selector for remove button
-  `fieldName`        string   Root field name
-  `rowIdPrefix`      string   DOM row ID prefix
-  `maxFields`        number   Max rows allowed
-
-------------------------------------------------------------------------
+| Option | Type | Default | Description |
+|------|------|--------|-------------|
+| `addBtn` | string | `null` | Selector for the “Add” button |
+| `maxFields` | number | `10` | Maximum number of rows |
+| `removeSelector` | string | `.row_remove` | Selector for remove button |
+| `fieldName` | string | `rows` | Base name for input fields |
+| `rowIdPrefix` | string | `row` | Prefix for row container IDs |
+| `startCounter` | number | `0` | Initial index offset |
+| `reindexOnRemove` | boolean | `true` | Reindex rows after removal |
+-
 
 ### ID Handling
 
@@ -129,8 +141,9 @@ validator: {
 }
 ```
 
--   Automatically adds/removes validators
--   Works with dynamic indexes
+✔ Validators added on row creation
+✔ Validators removed on row deletion
+✔ `{index}` auto-replaced
 
 ------------------------------------------------------------------------
 
@@ -172,6 +185,100 @@ Flow:
 
 ------------------------------------------------------------------------
 
+### `rowTemplate`
+
+```js
+rowTemplate: (i, name) => `
+    <div class="row-box" id="row_${i}">
+        <label for="email_${i}">Email</label>
+        <input
+            type="email"
+            name="${name}[${i}][email]"
+            id="email_${i}"
+            class="form-control"
+        >
+        <button type="button" class="row_remove" data-index="${i}">
+            Remove
+        </button>
+    </div>
+`
+```
+
+**Rules**
+- Row container MUST have an ID using `rowIdPrefix_index`
+- Remove button MUST contain `data-index`
+- Inputs MUST use `fieldName[index]`
+
+## 🧩 Template Variable Replacement
+
+```js
+templateVars('/user/{id}/email/{index}', {
+    id: 10,
+    index: 2
+});
+```
+
+Result:
+
+```
+/user/10/email/2
+```
+
+
+## 🔁 Reindexing System
+
+### Always Reindexed Attributes
+
+The following attributes are **always reindexed and cannot be disabled**:
+
+- `id`
+- `for`
+- `aria-describedby`
+- `data-bv-field`
+- `data-bv-for`
+
+### Custom Attributes
+
+```js
+reindexKnownAttributes: ['data-target', 'aria-controls']
+```
+
+### How It Works
+
+- Detects removed index
+- Replaces old index with new index
+- Preserves surrounding text (`email_2`, `item-2`, `row[2]`)
+
+## 🧠 Index Placeholder System
+
+Use `_index` as a placeholder:
+
+```html
+<input id="email__index">
+```
+
+```js
+indexPattern: '_index'
+```
+
+Automatically becomes:
+
+```html
+<input id="email_3">
+```
+
+## ⚠️ Important Notes
+
+- Do NOT override default reindex attributes
+- Do NOT use arrow functions for remove handler
+- Always use `data-index` correctly
+- Row container ID MUST match `rowIdPrefix_index`
+
+
+
+
+------------------------------------------------------------------------
+
 ## 🧪 Usage Examples
 
 ------------------------------------------------------------------------
@@ -185,6 +292,7 @@ $("#jdesc_wrap").remAddRow({
   removeSelector: ".exp_remove",
   fieldName: "person",
   rowIdPrefix: "jdesc",
+  reindexKnownAttributes : [],    // custom reindexing
   rowTemplate: (i, name) => `
     <div id="jdesc_${i}" class="col-sm-12 row jdesc_row">
       <input type="hidden" name="${name}[${i}][id]">
@@ -217,7 +325,7 @@ $("#jdesc_wrap").remAddRow({
   fieldName: "person",
   rowIdPrefix: "jdesc",
   idField: 'person[{index}][id]', // Tell plugin where to find ID
-
+  reindexKnownAttributes : [],    // custom reindexing
   // SweetAlert2 Configuration
   swal: {
     enabled: true,
@@ -353,11 +461,6 @@ $(document).ready(function() {
     // Initialize Bootstrap Validator for the main form
     $('#multiForm').bootstrapValidator({
         excluded: [':disabled'],
-        feedbackIcons: {
-            valid: 'fas fa-check',
-            invalid: 'fas fa-times',
-            validating: 'fas fa-sync-alt'
-        },
         fields: {
             // We'll add dynamic fields programmatically
         }
@@ -372,7 +475,7 @@ $(document).ready(function() {
         fieldName: 'employees',
         rowIdPrefix: 'emp',
         reindexOnRemove: true,
-
+        reindexKnownAttributes : [],    // custom reindexing
         // ID Field Configuration
         idField: 'employees[{index}][id]',
 
