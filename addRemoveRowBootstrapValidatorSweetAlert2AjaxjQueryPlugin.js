@@ -238,7 +238,10 @@
 
     async function removeRow(e) {
       const $btn = $(this);
-      const index = $btn.data('index') ?? $btn.data('id');
+      // const index = $btn.data('index') ?? $btn.data('id');
+
+     const index = $btn.attr('data-index') ?? $btn.attr('data-id');
+      // console.log(index);
 
       let $row = $(`#${settings.rowSelector}_${index}`, $wrapper);
       if (!$row.length) {
@@ -363,6 +366,7 @@
 
       $wrapper.find(`.${settings.rowSelector}`).each(function (newIndex) {
         const $row = $(this);
+
         const e = start + newIndex;
 
         // reindex row id itself
@@ -372,6 +376,7 @@
           $row.find(`[${attr}]`).each(function () {
             const $el = $(this);
             const val = $el.attr(attr);
+
 
             if (!val) return;
 
@@ -391,19 +396,21 @@
       const start = Number(settings.startRow);
 
       $wrapper.find(`.${settings.rowSelector}`).each(function (newIndex) {
-        const f = start + newIndex;
 
         settings.reindexRowIndex.forEach(attr => {
           $(this).find(`[${attr}]`).each(function () {
-            const $el = $(this);
-            const val = $el.attr(attr);
 
-            if (!val) return;
+        const f = start + newIndex;   // 🔥 move inside scope
 
-            // Replace ONLY last numeric segment
-            $el.attr(attr, val.replace(/(\d+)$/, f));
-          });
+        const $el = $(this);
+        const val = $el.attr(attr);
+
+        if (!val) return;
+
+        $el.attr(attr, val.replace(/(\d+)$/, f));
+      });
         });
+
       });
     }
 
