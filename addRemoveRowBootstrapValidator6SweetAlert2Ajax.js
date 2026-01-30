@@ -523,28 +523,34 @@
 		 * ====================== */
 
 		const methods = {
+
 			add() {
 				addRow(new Event('click'));
 				return this;
 			},
+
 			remove(index) {
 				$wrapper
-					.find(`#${settings.rowSelector}_${index} .${settings.removeClass}`)
-					.trigger('click.addRemRow');
+				.find(`#${settings.rowSelector}_${index} .${settings.removeClass}`)
+				.trigger('click.addRemRow');
 				return this;
 			},
+
 			getCount() {
 				return i;
 			},
+
 			reset() {
 				$wrapper.find(`.${settings.rowSelector}`).remove();
 				i = 0;
 				return this;
 			},
+
 			reindexAll() {
 				reindexRowAll();
 				return this;
 			},
+
 			destroy() {
 				if (settings.addBtn) {
 					$(settings.addBtn).off('click.addRemRow');
@@ -552,307 +558,182 @@
 				$wrapper.off('click.addRemRow', `.${settings.removeClass}`);
 				this.reset();
 				return this;
-			}
+			},
 
-/* ========================
- * PUBLIC API (EXTENDED)
- * ====================== */
+	/* ========================
+	 * EXTENDED API
+	 * ====================== */
 
-			const methods = {
-	// Existing methods...
-				add() {
-					addRow(new Event('click'));
-					return this;
-				},
-				remove(index) {
-					$wrapper
-					.find(`#${settings.rowSelector}_${index} .${settings.removeClass}`)
-					.trigger('click.addRemRow');
-					return this;
-				},
-				getCount() {
-					return i;
-				},
-				reset() {
-					$wrapper.find(`.${settings.rowSelector}`).remove();
-					i = 0;
-					return this;
-				},
-				reindexAll() {
-					reindexRowAll();
-					return this;
-				},
-				destroy() {
-					if (settings.addBtn) {
-						$(settings.addBtn).off('click.addRemRow');
+			getRow(index) {
+				return $(`#${settings.rowSelector}_${index}`, $wrapper);
+			},
+
+			getAllRows() {
+				return $wrapper.find(`.${settings.rowSelector}`);
+			},
+
+			getRowData(index) {
+				const $row = this.getRow(index);
+				const data = {};
+
+				$row.find(':input').each(function () {
+					const $input = $(this);
+					const name = $input.attr('name');
+					if (!name) return;
+
+					const matches = name.match(/(\w+)\[(\d+)\]\[(\w+)\]/);
+					if (matches && matches[2] == index) {
+						data[matches[3]] = $input.val();
 					}
-					$wrapper.off('click.addRemRow', `.${settings.removeClass}`);
-					this.reset();
-					return this;
-				},
+				});
 
-	// NEW METHODS ADDED BELOW
+				return data;
+			},
 
-	/**
-	 * Get jQuery object of a specific row
-	 * @param {number} index - Row index
-	 * @returns {jQuery} Row element
-	 */
-				getRow(index) {
-					return $(`#${settings.rowSelector}_${index}`, $wrapper);
-				},
+			getAllData() {
+				const data = [];
+				this.getAllRows().each((idx, row) => {
+					const rowIndex = $(row).attr('id').split('_').pop();
+					data.push(this.getRowData(rowIndex));
+				});
+				return data;
+			},
 
-	/**
-	 * Get all rows as jQuery collection
-	 * @returns {jQuery} All row elements
-	 */
-				getAllRows() {
-					return $wrapper.find(`.${settings.rowSelector}`);
-				},
+			setRowData(index, data) {
+				const $row = this.getRow(index);
 
-	/**
-	 * Get form data from a specific row
-	 * @param {number} index - Row index
-	 * @returns {Object} Serialized row data
-	 */
-				getRowData(index) {
-					const $row = this.getRow(index);
-					const data = {};
+				Object.keys(data).forEach(key => {
+					$row.find(`[name*="[${key}]"]`).val(data[key]);
+				});
 
-					$row.find(':input').each(function() {
-						const $input = $(this);
-						const name = $input.attr('name');
-						if (name) {
-				// Extract nested structure from name like data[0][name]
-							const matches = name.match(/(\w+)\[(\d+)\]\[(\w+)\]/);
-							if (matches && matches[2] == index) {
-								data[matches[3]] = $input.val();
-							}
-						}
-					});
+				return this;
+			},
 
-					return data;
-				},
+			setAllData(dataArray) {
+				this.reset();
 
-	/**
-	 * Get form data from all rows
-	 * @returns {Array} Array of row data objects
-	 */
-				getAllData() {
-					const data = [];
-					this.getAllRows().each((idx, row) => {
-						const $row = $(row);
-						const rowIndex = $row.attr('id').split('_').pop();
-						data.push(this.getRowData(rowIndex));
-					});
-					return data;
-				},
-
-	/**
-	 * Set data for a specific row
-	 * @param {number} index - Row index
-	 * @param {Object} data - Data to populate
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				setRowData(index, data) {
-					const $row = this.getRow(index);
-
-					Object.keys(data).forEach(key => {
-						const $input = $row.find(`[name*="[${key}]"]`);
-						if ($input.length) {
-							$input.val(data[key]);
-						}
-					});
-
-					return this;
-				},
-
-	/**
-	 * Set data for all rows (adds rows if needed)
-	 * @param {Array} dataArray - Array of row data objects
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				setAllData(dataArray) {
-		// Remove existing rows
-					this.reset();
-
-		// Add rows and populate data
-					dataArray.forEach((rowData, idx) => {
-						if (idx < settings.maxRows) {
-							this.add();
-							this.setRowData(settings.startRow + idx, rowData);
-						}
-					});
-
-					return this;
-				},
-
-	/**
-	 * Check if maximum rows limit has been reached
-	 * @returns {boolean} True if max rows reached
-	 */
-				isMaxRowsReached() {
-					return i >= (settings.startRow + settings.maxRows);
-				},
-
-	/**
-	 * Disable add button
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				disableAdd() {
-					if (settings.addBtn) {
-						$(settings.addBtn).prop('disabled', true).addClass('disabled');
+				dataArray.forEach((rowData, idx) => {
+					if (idx < settings.maxRows) {
+						this.add();
+						this.setRowData(settings.startRow + idx, rowData);
 					}
-					return this;
-				},
+				});
 
-	/**
-	 * Enable add button
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				enableAdd() {
-					if (settings.addBtn) {
-						$(settings.addBtn).prop('disabled', false).removeClass('disabled');
-					}
-					return this;
-				},
+				return this;
+			},
 
-	/**
-	 * Disable remove buttons for all rows
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				disableRemove() {
-					$wrapper.find(`.${settings.removeClass}`).prop('disabled', true).addClass('disabled');
-					return this;
-				},
+			isMaxRowsReached() {
+				return i >= (settings.startRow + settings.maxRows);
+			},
 
-	/**
-	 * Enable remove buttons for all rows
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				enableRemove() {
-					$wrapper.find(`.${settings.removeClass}`).prop('disabled', false).removeClass('disabled');
-					return this;
-				},
-
-	/**
-	 * Update plugin settings dynamically
-	 * @param {Object} newOptions - New options to merge
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				updateOptions(newOptions) {
-					Object.assign(settings, newOptions);
-
-		// Reinitialize with updated settings
-					if (newOptions.addBtn) {
-						$(settings.addBtn).off('click.addRemRow').on('click.addRemRow', addRow);
-					}
-
-					return this;
-				},
-
-	/**
-	 * Trigger validation for a specific row
-	 * @param {number} index - Row index
-	 * @returns {boolean} Validation result
-	 */
-				validateRow(index) {
-					if (!settings.validator) return true;
-
-					const { form } = settings.validator;
-					const $form = $(form);
-
-					if ($form.length && typeof $form.bootstrapValidator === 'function') {
-						return $form.bootstrapValidator('validateField',
-					`${settings.fieldName}[${index}][*]`);
-					}
-
-					return true;
-				},
-
-	/**
-	 * Trigger validation for all rows
-	 * @returns {boolean} Overall validation result
-	 */
-				validateAll() {
-					if (!settings.validator) return true;
-
-					const { form } = settings.validator;
-					const $form = $(form);
-
-					if ($form.length && typeof $form.bootstrapValidator === 'function') {
-						return $form.bootstrapValidator('validate');
-					}
-
-					return true;
-				},
-
-	/**
-	 * Get current configuration
-	 * @returns {Object} Current settings (read-only copy)
-	 */
-				getConfig() {
-					return Object.assign({}, settings);
-				},
-
-	/**
-	 * Show/hide rows based on filter function
-	 * @param {Function} filterFn - Function that receives row data and returns boolean
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				filterRows(filterFn) {
-					this.getAllRows().each((idx, row) => {
-						const $row = $(row);
-						const rowIndex = $row.attr('id').split('_').pop();
-						const rowData = this.getRowData(rowIndex);
-
-						if (filterFn(rowData, rowIndex, $row)) {
-							$row.show();
-						} else {
-							$row.hide();
-						}
-					});
-
-					return this;
-				},
-
-	/**
-	 * Sort rows based on comparator function
-	 * @param {Function} compareFn - Comparator function
-	 * @returns {Object} Plugin instance for chaining
-	 */
-				sortRows(compareFn) {
-					const rows = [];
-					const rowData = [];
-
-		// Collect rows and data
-					this.getAllRows().each((idx, row) => {
-						const $row = $(row);
-						const rowIndex = $row.attr('id').split('_').pop();
-						rows.push({
-							element: $row,
-							index: rowIndex,
-							data: this.getRowData(rowIndex)
-						});
-					});
-
-		// Sort based on data
-					rows.sort((a, b) => compareFn(a.data, b.data));
-
-		// Reorder in DOM
-					rows.forEach((row, newIndex) => {
-						$wrapper.append(row.element);
-					});
-
-		// Reindex
-					this.reindexAll();
-
-					return this;
+			disableAdd() {
+				if (settings.addBtn) {
+					$(settings.addBtn).prop('disabled', true).addClass('disabled');
 				}
-			};
+				return this;
+			},
 
+			enableAdd() {
+				if (settings.addBtn) {
+					$(settings.addBtn).prop('disabled', false).removeClass('disabled');
+				}
+				return this;
+			},
 
+			disableRemove() {
+				$wrapper.find(`.${settings.removeClass}`)
+				.prop('disabled', true)
+				.addClass('disabled');
+				return this;
+			},
+
+			enableRemove() {
+				$wrapper.find(`.${settings.removeClass}`)
+				.prop('disabled', false)
+				.removeClass('disabled');
+				return this;
+			},
+
+			updateOptions(newOptions) {
+				Object.assign(settings, newOptions);
+
+				if (newOptions.addBtn) {
+					$(settings.addBtn)
+					.off('click.addRemRow')
+					.on('click.addRemRow', addRow);
+				}
+
+				return this;
+			},
+
+			validateRow(index) {
+				if (!settings.validator) return true;
+
+				const { form } = settings.validator;
+				const $form = $(form);
+
+				if ($form.length && typeof $form.bootstrapValidator === 'function') {
+					return $form.bootstrapValidator(
+					                                'validateField',
+					                              `${settings.fieldName}[${index}][*]`
+					                              );
+				}
+
+				return true;
+			},
+
+			validateAll() {
+				if (!settings.validator) return true;
+
+				const { form } = settings.validator;
+				const $form = $(form);
+
+				if ($form.length && typeof $form.bootstrapValidator === 'function') {
+					return $form.bootstrapValidator('validate');
+				}
+
+				return true;
+			},
+
+			getConfig() {
+				return Object.assign({}, settings);
+			},
+
+			filterRows(filterFn) {
+				this.getAllRows().each((idx, row) => {
+					const $row = $(row);
+					const rowIndex = $row.attr('id').split('_').pop();
+					const rowData = this.getRowData(rowIndex);
+
+					filterFn(rowData, rowIndex, $row) ? $row.show() : $row.hide();
+				});
+
+				return this;
+			},
+
+			sortRows(compareFn) {
+				const rows = [];
+
+				this.getAllRows().each((idx, row) => {
+					const $row = $(row);
+					const rowIndex = $row.attr('id').split('_').pop();
+
+					rows.push({
+						el: $row,
+						index: rowIndex,
+						data: this.getRowData(rowIndex)
+					});
+				});
+
+				rows.sort((a, b) => compareFn(a.data, b.data));
+
+				rows.forEach(r => $wrapper.append(r.el));
+
+				this.reindexAll();
+				return this;
+			}
 		};
+
 
 		return init();
 	};
