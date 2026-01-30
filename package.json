@@ -1,5 +1,5 @@
 {
-  "name": "addRemoveRowValidator6SweetAlert2Ajax",
+  "name": "addremrow-validator5-swal2-ajax",
   "version": "1.0.0",
   "description": "A powerful, feature-rich jQuery plugin for dynamically adding and removing form rows with support for validation, SweetAlert2 confirmations, nested fields, and comprehensive reindexing.",
   "keywords": [
@@ -19,7 +19,7 @@
   "license": "ISC",
   "author": "kroos",
   "type": "commonjs",
-  "main": "addRemoveRowValidator6SweetAlert2Ajax.js",
+  "main": "addRemRowValidator5Swal2Ajax.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
