@@ -143,7 +143,7 @@
 
 			const y = Number(settings.startRow);
 			const x = Number($wrapper.find(`.${settings.rowSelector}`).length ?? $wrapper.find(`#${settings.rowSelector}_${i}`).length );
-			const i = y + x;
+			i = y + x;
 			// console.log(i);
 
 			// const i = $wrapper.find(`.${settings.rowSelector}`).length ?? $wrapper.find(`#${settings.rowSelector}_${i}`).length ;
